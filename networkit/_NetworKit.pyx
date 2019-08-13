@@ -6619,6 +6619,7 @@ cdef extern from "<networkit/centrality/Centrality.hpp>":
 		double score(node) except +
 		double maximum() except +
 		double centralization() except +
+		vector[double] lengthScaleScores() except +
 
 
 cdef extern from "<networkit/base/DynAlgorithm.hpp>":
@@ -7197,6 +7198,17 @@ cdef class Betweenness(Centrality):
 			The betweenness scores calculated by run().
 		"""
 		return (<_Betweenness*>(self._this)).edgeScores()
+
+
+	def lengthScaleScores(self):
+		""" Get a vector containing the betweenness score for each edge in the graph.
+
+		Returns
+		-------
+		vector
+			The betweenness scores calculated by run().
+		"""
+		return (<_Betweenness*>(self._this)).lengthScaleScores()
 
 
 cdef extern from "<networkit/centrality/ApproxGroupBetweenness.hpp>":

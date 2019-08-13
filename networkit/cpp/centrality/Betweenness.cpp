@@ -24,6 +24,9 @@ void Betweenness::run() {
 	count z = G.upperNodeIdBound();
 	scoreData.clear();
 	scoreData.resize(z);
+	lengthScaled.clear();
+	lengthScaled.resize(z);
+
 	if (computeEdgeCentrality) {
 		count z2 = G.upperEdgeIdBound();
 		edgeScoreData.clear();
@@ -33,6 +36,7 @@ void Betweenness::run() {
 	// thread-local scores for efficient parallelism
 	count maxThreads = omp_get_max_threads();
 	std::vector<std::vector<double> > scorePerThread(maxThreads, std::vector<double>(G.upperNodeIdBound()));
+
 	DEBUG("score per thread: ", scorePerThread.size());
 	DEBUG("G.upperEdgeIdBound(): ", G.upperEdgeIdBound());
 	std::vector<std::vector<double> > edgeScorePerThread;
@@ -69,6 +73,7 @@ void Betweenness::run() {
 		while (!stack.empty()) {
 			node t = stack.back();
 			stack.pop_back();
+
 			for (node p : sssp->getPredecessors(t)) {
 				// workaround for integer overflow in large graphs
 				bigfloat tmp = sssp->numberOfPaths(p) / sssp->numberOfPaths(t);
@@ -89,6 +94,46 @@ void Betweenness::run() {
 	};
 	handler.assureRunning();
 	G.balancedParallelForNodes(computeDependencies);
+
+	// Length scalled betweenness begin
+	const auto nodes = G.nodes();
+	SSSP *sssp;
+
+	if (G.isWeighted()) {
+		sssp = new Dijkstra(G, 0, true, true);
+	} else {
+		sssp = new BFS(G, 0, true, true);
+	}
+
+	for (uint64_t i = 0; i < nodes.size(); i++) {
+		sssp->setSource(i);
+		sssp->run();
+		for (uint64_t j = 0; j < nodes.size(); j++) {
+			if (i == j) continue;
+
+			const auto paths = sssp->getPaths(j);
+			const auto pathsCount = paths.size();
+
+			if (pathsCount == 0) continue;
+
+			for (auto it = paths.begin(); it != paths.end(); ++it) {
+				const auto path = *it;
+				const auto pathLength = path.size();
+
+				if (pathLength <= 2) continue;
+
+				for (auto node = path.begin() + 1; node != path.end() - 1; node++) {
+					const double lengthScale = (double)pathsCount / (double)pathLength;
+
+					lengthScaled[*node] += lengthScale;
+				}
+			}
+		}
+	}
+
+	delete sssp;
+	// Length scalled betweenness end
+
 	handler.assureRunning();
 	DEBUG("adding thread-local scores");
 	// add up all thread-local values

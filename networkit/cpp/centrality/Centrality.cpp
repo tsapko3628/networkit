@@ -45,6 +45,12 @@ std::vector<double> Centrality::scores(bool moveOut) {
   return moveOut ? std::move(scoreData) : scoreData;
 }
 
+std::vector<double> Centrality::lengthScaleScores(bool moveOut) {
+  assureFinished();
+  hasRun = !moveOut;
+  return moveOut ? std::move(lengthScaled) : lengthScaled;
+}
+
 std::vector<double> Centrality::edgeScores() {
   assureFinished();
   return edgeScoreData;

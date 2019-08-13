@@ -43,6 +43,7 @@ public:
 	 * @return The centrality scores calculated by @link run().
 	 */
 	virtual std::vector<double> scores(bool moveOut = false);
+	virtual std::vector<double> lengthScaleScores(bool moveOut = false);
 
 	/**
 	 * Get a vector containing the edge centrality score for each edge in the graph (where applicable).
@@ -91,6 +92,7 @@ protected:
 	const Graph& G;
 	std::vector<double> scoreData;
 	std::vector<double> edgeScoreData;
+	std::vector<double> lengthScaled;
 	bool normalized; // true if scores should be normalized in the interval [0,1]
 	bool computeEdgeCentrality;
 

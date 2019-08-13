@@ -35,8 +35,6 @@ def scores(G, algorithm=Betweenness, normalized=False):
 	centrality.run()
 	return centrality.scores()
 
-
-
 def rankPerNode(ranking):
 	"""
 	Parameters
