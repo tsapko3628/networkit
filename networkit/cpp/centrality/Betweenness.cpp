@@ -14,6 +14,8 @@
 #include <networkit/distance/Dijkstra.hpp>
 #include <networkit/distance/BFS.hpp>
 
+#include <iostream>
+
 namespace NetworKit {
 
 Betweenness::Betweenness(const Graph& G, bool normalized, bool computeEdgeCentrality) :
@@ -73,6 +75,7 @@ void Betweenness::run() {
 		while (!stack.empty()) {
 			node t = stack.back();
 			stack.pop_back();
+#define WATCH_NODE 3
 
 			for (node p : sssp->getPredecessors(t)) {
 				// workaround for integer overflow in large graphs
@@ -85,54 +88,36 @@ void Betweenness::run() {
 					edgeScorePerThread[omp_get_thread_num()][G.edgeId(p,t)] += c;
 				}
 
-
 			}
-			if (t != s) {
+
+			if (t != s ) {
 				scorePerThread[omp_get_thread_num()][t] += dependency[t];
+
+				// Length scalled betweenness begin
+				const auto paths = sssp->getPaths(t);
+				const auto pathsCount = paths.size();
+				const auto pathLength = sssp->distance(t);
+
+				if (pathsCount == 0) continue;
+
+				for (auto it = paths.begin(); it != paths.end(); ++it) {
+					const auto path = *it;
+
+					if (path.size() <= 2) continue;
+
+					for (auto node = path.begin() + 1; node != path.end() - 1; node++) {
+						const double lengthScale = (double)pathsCount / (double)(pathLength);
+
+						lengthScaled[*node] += lengthScale;
+					}
+				}
+
+				// Length scalled betweenness end
 			}
 		}
 	};
 	handler.assureRunning();
 	G.balancedParallelForNodes(computeDependencies);
-
-	// Length scalled betweenness begin
-	const auto nodes = G.nodes();
-	SSSP *sssp;
-
-	if (G.isWeighted()) {
-		sssp = new Dijkstra(G, 0, true, true);
-	} else {
-		sssp = new BFS(G, 0, true, true);
-	}
-
-	for (uint64_t i = 0; i < nodes.size(); i++) {
-		sssp->setSource(i);
-		sssp->run();
-		for (uint64_t j = 0; j < nodes.size(); j++) {
-			if (i == j) continue;
-
-			const auto paths = sssp->getPaths(j);
-			const auto pathsCount = paths.size();
-
-			if (pathsCount == 0) continue;
-
-			for (auto it = paths.begin(); it != paths.end(); ++it) {
-				const auto path = *it;
-				const auto pathLength = path.size();
-
-				if (pathLength <= 2) continue;
-
-				for (auto node = path.begin() + 1; node != path.end() - 1; node++) {
-					const double lengthScale = (double)pathsCount / (double)pathLength;
-
-					lengthScaled[*node] += lengthScale;
-				}
-			}
-		}
-	}
-
-	delete sssp;
-	// Length scalled betweenness end
 
 	handler.assureRunning();
 	DEBUG("adding thread-local scores");
