@@ -100,13 +100,14 @@ void Betweenness::run() {
 
 				if (pathsCount == 0) continue;
 
+				const double lengthScale = (double)pathsCount / (double)(pathLength);
+
 				for (auto it = paths.begin(); it != paths.end(); ++it) {
 					const auto path = *it;
 
 					if (path.size() <= 2) continue;
 
 					for (auto node = path.begin() + 1; node != path.end() - 1; node++) {
-						const double lengthScale = (double)pathsCount / (double)(pathLength);
 
 						lengthScaled[*node] += lengthScale;
 					}
