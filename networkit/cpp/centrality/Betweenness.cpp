@@ -14,8 +14,6 @@
 #include <networkit/distance/Dijkstra.hpp>
 #include <networkit/distance/BFS.hpp>
 
-#include <iostream>
-
 namespace NetworKit {
 
 Betweenness::Betweenness(const Graph& G, bool normalized, bool computeEdgeCentrality) :
