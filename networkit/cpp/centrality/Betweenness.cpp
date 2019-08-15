@@ -93,19 +93,15 @@ void Betweenness::run() {
 
 				// Length scalled betweenness begin
 				const auto paths = sssp->getPaths(t);
-				const auto pathsCount = paths.size();
 				const auto pathLength = sssp->distance(t);
 
-				if (pathsCount == 0) continue;
-
-				const double lengthScale = (double)pathsCount / (double)(pathLength);
+				if (paths.size() == 0) continue;
 
 				for (auto it = paths.begin(); it != paths.end(); ++it) {
-					const auto path = *it;
+					if (it->size() <= 2) continue;
 
-					if (path.size() <= 2) continue;
-
-					for (auto node = path.begin() + 1; node != path.end() - 1; node++) {
+					for (auto node = it->begin() + 1; node != it->end() - 1; node++) {
+						const double lengthScale = (double)dependency[*node] / (double)(pathLength);
 
 						lengthScaled[*node] += lengthScale;
 					}
