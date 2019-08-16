@@ -36,6 +36,7 @@ void Betweenness::run() {
 	// thread-local scores for efficient parallelism
 	count maxThreads = omp_get_max_threads();
 	std::vector<std::vector<double> > scorePerThread(maxThreads, std::vector<double>(G.upperNodeIdBound()));
+	std::vector<std::vector<double> > lengthPerThread(maxThreads, std::vector<double>(G.upperNodeIdBound()));
 
 	DEBUG("score per thread: ", scorePerThread.size());
 	DEBUG("G.upperEdgeIdBound(): ", G.upperEdgeIdBound());
@@ -46,6 +47,7 @@ void Betweenness::run() {
 	DEBUG("edge score per thread: ", edgeScorePerThread.size());
 
 	std::vector<std::vector<double>> dependencies(maxThreads, std::vector<double>(z));
+	std::vector<std::vector<double>> SLdependencies(maxThreads, std::vector<double>(z));
 	std::vector<std::unique_ptr<SSSP>> sssps;
 	sssps.resize(maxThreads);
 #pragma omp parallel
@@ -60,7 +62,9 @@ void Betweenness::run() {
 	auto computeDependencies = [&](node s) {
 
 		std::vector<double> &dependency = dependencies[omp_get_thread_num()];
+		std::vector<double> &SLdependency = SLdependencies[omp_get_thread_num()];
 		std::fill(dependency.begin(), dependency.end(), 0);
+		std::fill(SLdependency.begin(), SLdependency.end(), 0);
 
 		// run SSSP algorithm and keep track of everything
 		auto sssp = sssps[omp_get_thread_num()].get();
@@ -73,6 +77,7 @@ void Betweenness::run() {
 		while (!stack.empty()) {
 			node t = stack.back();
 			stack.pop_back();
+			const auto pathLength = sssp->distance(t);
 #define WATCH_NODE 3
 
 			for (node p : sssp->getPredecessors(t)) {
@@ -80,8 +85,9 @@ void Betweenness::run() {
 				bigfloat tmp = sssp->numberOfPaths(p) / sssp->numberOfPaths(t);
 				double weight;
 				tmp.ToDouble(weight);
-				double c= weight * (1 + dependency[t]);
+				double c = weight * (1 + dependency[t]);
 				dependency[p] += c;
+				SLdependency[p] += (c / pathLength);
 				if (computeEdgeCentrality) {
 					edgeScorePerThread[omp_get_thread_num()][G.edgeId(p,t)] += c;
 				}
@@ -90,24 +96,7 @@ void Betweenness::run() {
 
 			if (t != s ) {
 				scorePerThread[omp_get_thread_num()][t] += dependency[t];
-
-				// Length scalled betweenness begin
-				const auto paths = sssp->getPaths(t);
-				const auto pathLength = sssp->distance(t);
-
-				if (paths.size() == 0) continue;
-
-				for (auto it = paths.begin(); it != paths.end(); ++it) {
-					if (it->size() <= 2) continue;
-
-					for (auto node = it->begin() + 1; node != it->end() - 1; node++) {
-						const double lengthScale = (double)dependency[*node] / (double)(pathLength);
-
-						lengthScaled[*node] += lengthScale;
-					}
-				}
-
-				// Length scalled betweenness end
+				lengthPerThread[omp_get_thread_num()][t] += SLdependency[t] / pathLength;
 			}
 		}
 	};
@@ -120,6 +109,11 @@ void Betweenness::run() {
 	for (const auto &local : scorePerThread) {
 		G.parallelForNodes([&](node v){
 			scoreData[v] += local[v];
+		});
+	}
+	for (const auto &local : lengthPerThread) {
+		G.parallelForNodes([&](node v){
+			lengthScaled[v] += local[v];
 		});
 	}
 	if (computeEdgeCentrality) {
