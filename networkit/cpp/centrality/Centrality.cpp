@@ -39,6 +39,20 @@ std::vector<std::pair<node, double>> Centrality::ranking() {
   return ranking;
 }
 
+std::vector<std::pair<node, double>> Centrality::lengthRanking() {
+  assureFinished();
+  std::vector<std::pair<node, double>> ranking;
+  G.forNodes([&](node v) { ranking.push_back({v, lengthScaled[v]}); });
+  Aux::Parallel::sort(ranking.begin(), ranking.end(),
+                      [](std::pair<node, double> x, std::pair<node, double> y) {
+                        if (x.second == y.second) {
+                          return x.first < y.first;
+                        }
+                        return x.second > y.second;
+                      });
+  return ranking;
+}
+
 std::vector<double> Centrality::scores(bool moveOut) {
   assureFinished();
   hasRun = !moveOut;

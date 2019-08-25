@@ -6620,6 +6620,7 @@ cdef extern from "<networkit/centrality/Centrality.hpp>":
 		double maximum() except +
 		double centralization() except +
 		vector[double] lengthScaleScores() except +
+		vector[pair[node, double]] lengthRanking() except +
 
 
 cdef extern from "<networkit/base/DynAlgorithm.hpp>":
@@ -6672,6 +6673,17 @@ cdef class Centrality(Algorithm):
 		if self._this == NULL:
 			raise RuntimeError("Error, object not properly initialized")
 		return (<_Centrality*>(self._this)).ranking()
+
+	def lengthRanking(self):
+		"""
+		Returns
+		-------
+		dictionary
+			a vector of pairs sorted into descending order. Each pair contains a node and the corresponding score
+		"""
+		if self._this == NULL:
+			raise RuntimeError("Error, object not properly initialized")
+		return (<_Centrality*>(self._this)).lengthRanking()
 
 	def maximum(self):
 		"""
@@ -7598,6 +7610,18 @@ cdef class KadabraBetweenness(Algorithm):
 				  unionSample = 0, startFactor = 100):
 		self._this = new _KadabraBetweenness(G._this, err, delta, k, unionSample,
 										   startFactor)
+
+	def ranking(self):
+		"""
+		Returns the ranking of the nodes according to their approximated
+		betweenness centrality.
+
+		Returns
+		-------
+		list(int, double)
+			A list of pairs (node, betweenness) representing the top-k ranking.
+		"""
+		return (<_KadabraBetweenness*>(self._this)).ranking()
 
 	def ranking(self):
 		"""

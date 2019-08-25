@@ -57,6 +57,7 @@ public:
 	 * @return A vector of pairs.
 	 */
 	virtual std::vector<std::pair<node, double> > ranking();
+	virtual std::vector<std::pair<node, double> > lengthRanking();
 
 	/**
 	 * Get the centrality score of node @a v calculated by @link run().
