@@ -2962,7 +2962,7 @@ cdef class LFRGenerator(Algorithm):
 
 
 		Parameters
-		----------
+		----------d
 		avgDegree : count
 			The average degree of the created graph
 		maxDegree : count
@@ -7610,18 +7610,6 @@ cdef class KadabraBetweenness(Algorithm):
 				  unionSample = 0, startFactor = 100):
 		self._this = new _KadabraBetweenness(G._this, err, delta, k, unionSample,
 										   startFactor)
-
-	def ranking(self):
-		"""
-		Returns the ranking of the nodes according to their approximated
-		betweenness centrality.
-
-		Returns
-		-------
-		list(int, double)
-			A list of pairs (node, betweenness) representing the top-k ranking.
-		"""
-		return (<_KadabraBetweenness*>(self._this)).ranking()
 
 	def ranking(self):
 		"""
